@@ -1,0 +1,49 @@
+trigger:
+- main
+- develop
+
+resources:
+- repo: self
+
+variables:
+  - group: IaC_VARS
+  - group: IaC_Secure_VARS
+
+  # Agent VM image name
+  - name: 'vmImageName'
+    value: '$(selfhostedpool)'
+
+  # ACA variable section
+  - name: 'appSourcePath'
+    value: '$(Build.SourcesDirectory)'
+  - name: 'azureSubscription'
+    value: '$(azarm_sconn)'
+  - name: 'containerAppName'
+    value: '$(acaName)'
+  - name: 'resourceGroup'
+    value: '$(rgName)'
+  - name: 'imageToDeploy'
+    value: '$(containerRegistry)/$(imageRepository):$(tag)'
+
+stages:
+- stage: Deploy
+  displayName: ARM Deployment
+  jobs:
+  - job: Deploy
+    displayName: Deploy
+    pool:
+      name: $(vmImageName)
+    steps:
+    - task: AzureResourceManagerTemplateDeployment@3
+      inputs:
+        deploymentScope: 'Resource Group'
+        azureResourceManagerConnection: '$(azureSubscription)'
+        subscriptionId: '$(subscriptionId)'
+        action: 'Create Or Update Resource Group'
+        resourceGroupName: '$(resourceGroup)'
+        location: '$(location)'
+        templateLocation: 'Linked artifact'
+        csmFile: '$(Build.SourcesDirectory)/$(pathToArmTemplate)'
+        csmParametersFile: '$(Build.SourcesDirectory)/$(pathToParameterFile)'
+        overrideParameters: '$(parameterOverrideValues)'
+        deploymentMode: 'Incremental'
