@@ -1,0 +1,63 @@
+trigger:
+- main
+- develop
+
+resources:
+- repo: self
+
+variables:
+  # Container registry service connection established during pipeline creation
+  - name: 'dockerRegistryServiceConnection' 
+    value: '$(acr_sconn)'
+  - name: 'imageRepository'
+    value: '$(appImageRepository)'
+  - name: 'containerRegistry'
+    value: '$(acrName)'
+  - name: 'dockerfilePath'
+    value: '$(dockerFilePath)'
+  - name: 'tag'
+    value: '$(Build.BuildId)'
+  - group: ACR_IaC_VARS
+  - group: IaC_Secure_VARS
+
+  # Agent VM image name
+  - name: 'vmImageName'
+    value: '$(selfhostedpool)'
+
+  # ACA variable section
+  - name: 'appSourcePath'
+    value: '$(Build.SourcesDirectory)'
+  - name: 'azureSubscription'
+    value: '$(azarm_sconn)'
+  - name: 'containerAppName'
+    value: '$(acaName)'
+  - name: 'resourceGroup'
+    value: '$(rgName)'
+  - name: 'imageToDeploy'
+    value: '$(containerRegistry)/$(imageRepository):$(tag)'
+
+stages:
+- stage: Build
+  displayName: Build and push stage
+  jobs:
+  - job: Build
+    displayName: Build
+    pool:
+      name: $(vmImageName)
+    steps:
+    - task: Docker@2
+      displayName: Build and push an image to container registry
+      inputs:
+        command: buildAndPush
+        repository: $(imageRepository)
+        dockerfile: $(dockerfilePath)
+        containerRegistry: $(dockerRegistryServiceConnection)
+        tags: |
+          $(tag)
+
+    - task: AzureContainerApps@1
+      inputs:
+        azureSubscription: $(azureSubscription)
+        containerAppName: $(containerAppName)
+        resourceGroup: $(resourceGroup)
+        imageToDeploy: $(imageToDeploy)
