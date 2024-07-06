@@ -1,0 +1,162 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "registries_crispprotoacr_name": {
+            "defaultValue": "crispprotoacr",
+            "type": "String"
+        },
+        "privateEndpoints_acrpepnt_externalid": {
+            "defaultValue": "/subscriptions/8396849a-0101-4652-99e0-fb93e4664657/resourceGroups/crisp-prototype/providers/Microsoft.Network/privateEndpoints/acrpepnt",
+            "type": "String"
+        }
+    },
+    "variables": {},
+    "resources": [
+        {
+            "type": "Microsoft.ContainerRegistry/registries",
+            "apiVersion": "2023-11-01-preview",
+            "name": "[parameters('registries_crispprotoacr_name')]",
+            "location": "westus2",
+            "sku": {
+                "name": "Premium",
+                "tier": "Premium"
+            },
+            "properties": {
+                "adminUserEnabled": true,
+                "networkRuleSet": {
+                    "defaultAction": "Allow",
+                    "ipRules": []
+                },
+                "policies": {
+                    "quarantinePolicy": {
+                        "status": "disabled"
+                    },
+                    "trustPolicy": {
+                        "type": "Notary",
+                        "status": "disabled"
+                    },
+                    "retentionPolicy": {
+                        "days": 7,
+                        "status": "disabled"
+                    },
+                    "exportPolicy": {
+                        "status": "enabled"
+                    },
+                    "azureADAuthenticationAsArmPolicy": {
+                        "status": "enabled"
+                    },
+                    "softDeletePolicy": {
+                        "retentionDays": 7,
+                        "status": "disabled"
+                    }
+                },
+                "encryption": {
+                    "status": "disabled"
+                },
+                "dataEndpointEnabled": false,
+                "publicNetworkAccess": "Disabled",
+                "networkRuleBypassOptions": "AzureServices",
+                "zoneRedundancy": "Disabled",
+                "anonymousPullEnabled": false,
+                "metadataSearch": "Disabled"
+            }
+        },
+        {
+            "type": "Microsoft.ContainerRegistry/registries/privateEndpointConnections",
+            "apiVersion": "2023-11-01-preview",
+            "name": "[concat(parameters('registries_crispprotoacr_name'), '/', parameters('registries_crispprotoacr_name'), '.92060924671b4528b779aa289b58e659')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.ContainerRegistry/registries', parameters('registries_crispprotoacr_name'))]"
+            ],
+            "properties": {
+                "privateEndpoint": {
+                    "id": "[parameters('privateEndpoints_acrpepnt_externalid')]"
+                },
+                "privateLinkServiceConnectionState": {
+                    "status": "Approved",
+                    "description": "Auto-Approved"
+                }
+            }
+        },
+        {
+            "type": "Microsoft.ContainerRegistry/registries/scopeMaps",
+            "apiVersion": "2023-11-01-preview",
+            "name": "[concat(parameters('registries_crispprotoacr_name'), '/_repositories_admin')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.ContainerRegistry/registries', parameters('registries_crispprotoacr_name'))]"
+            ],
+            "properties": {
+                "description": "Can perform all read, write and delete operations on the registry",
+                "actions": [
+                    "repositories/*/metadata/read",
+                    "repositories/*/metadata/write",
+                    "repositories/*/content/read",
+                    "repositories/*/content/write",
+                    "repositories/*/content/delete"
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.ContainerRegistry/registries/scopeMaps",
+            "apiVersion": "2023-11-01-preview",
+            "name": "[concat(parameters('registries_crispprotoacr_name'), '/_repositories_pull')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.ContainerRegistry/registries', parameters('registries_crispprotoacr_name'))]"
+            ],
+            "properties": {
+                "description": "Can pull any repository of the registry",
+                "actions": [
+                    "repositories/*/content/read"
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.ContainerRegistry/registries/scopeMaps",
+            "apiVersion": "2023-11-01-preview",
+            "name": "[concat(parameters('registries_crispprotoacr_name'), '/_repositories_pull_metadata_read')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.ContainerRegistry/registries', parameters('registries_crispprotoacr_name'))]"
+            ],
+            "properties": {
+                "description": "Can perform all read operations on the registry",
+                "actions": [
+                    "repositories/*/content/read",
+                    "repositories/*/metadata/read"
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.ContainerRegistry/registries/scopeMaps",
+            "apiVersion": "2023-11-01-preview",
+            "name": "[concat(parameters('registries_crispprotoacr_name'), '/_repositories_push')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.ContainerRegistry/registries', parameters('registries_crispprotoacr_name'))]"
+            ],
+            "properties": {
+                "description": "Can push to any repository of the registry",
+                "actions": [
+                    "repositories/*/content/read",
+                    "repositories/*/content/write"
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.ContainerRegistry/registries/scopeMaps",
+            "apiVersion": "2023-11-01-preview",
+            "name": "[concat(parameters('registries_crispprotoacr_name'), '/_repositories_push_metadata_write')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.ContainerRegistry/registries', parameters('registries_crispprotoacr_name'))]"
+            ],
+            "properties": {
+                "description": "Can perform all read and write operations on the registry",
+                "actions": [
+                    "repositories/*/metadata/read",
+                    "repositories/*/metadata/write",
+                    "repositories/*/content/read",
+                    "repositories/*/content/write"
+                ]
+            }
+        }
+    ]
+}
